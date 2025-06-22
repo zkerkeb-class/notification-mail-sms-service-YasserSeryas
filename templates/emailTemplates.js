@@ -79,5 +79,5 @@ const emailTemplates = {
     }
   };
   
-  module.exports = emailTemplates;
+  export default emailTemplates;
   

@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test API Notification Email</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background-color: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input, select, textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-right: 10px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 5px;
+            white-space: pre-wrap;
+        }
+        .success {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        .error {
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        .loading {
+            background-color: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 Test API Notification Email - Nodemailer</h1>
+        <p>Interface de test pour le service de notification email utilisant Nodemailer.</p>
+        
+        <form id="emailForm">
+            <div class="form-group">
+                <label for="recipient">Email destinataire:</label>
+                <input type="email" id="recipient" value="yassermohamedyoussouf@gmail.com" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="subject">Sujet:</label>
+                <input type="text" id="subject" value="Test Nodemailer - Service de notification" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="template">Template:</label>
+                <select id="template" required>
+                    <option value="reservation-confirmation">Confirmation de réservation</option>
+                    <option value="event-reminder">Rappel d'événement</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="templateData">Données du template (JSON):</label>
+                <textarea id="templateData" rows="10" required>{
+  "userName": "Jean Dupont",
+  "eventName": "Concert Test Nodemailer",
+  "reservationNumber": "RES-2025-TEST",
+  "eventDate": "19 juin 2025",
+  "eventLocation": "Stade Test, Paris",
+  "ticketCount": 2,
+  "totalAmount": 50
+}</textarea>
+            </div>
+            
+            <button type="button" onclick="testConnection()">🔍 Tester la connexion</button>
+            <button type="submit">📧 Envoyer l'email</button>
+            <button type="button" onclick="sendBulkEmails()">📧📧 Envoi en lot</button>
+        </form>
+        
+        <div id="result"></div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:3004/api';
+        
+        // Test de connexion SMTP
+        async function testConnection() {
+            showResult('🔍 Test de connexion en cours...', 'loading');
+            
+            try {
+                const response = await fetch(`${API_BASE}/notifications/test-connection`);
+                const result = await response.json();
+                
+                if (result.success) {
+                    showResult('✅ Connexion SMTP réussie !\\n' + JSON.stringify(result, null, 2), 'success');
+                } else {
+                    showResult('❌ Erreur de connexion SMTP:\\n' + JSON.stringify(result, null, 2), 'error');
+                }
+            } catch (error) {
+                showResult('💥 Erreur de requête:\\n' + error.message, 'error');
+            }
+        }
+        
+        // Envoi d'email simple
+        async function sendEmail(e) {
+            e.preventDefault();
+            showResult('📧 Envoi en cours...', 'loading');
+            
+            const formData = {
+                type: 'email',
+                recipient: document.getElementById('recipient').value,
+                subject: document.getElementById('subject').value,
+                template: document.getElementById('template').value,
+                templateData: JSON.parse(document.getElementById('templateData').value)
+            };
+            
+            try {
+                const response = await fetch(`${API_BASE}/notifications/send`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(formData)
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok && result.success) {
+                    showResult('✅ Email envoyé avec succès !\\n' + JSON.stringify(result, null, 2), 'success');                } else {
+                    showResult('❌ Erreur d\'envoi:\\n' + JSON.stringify(result, null, 2), 'error');
+                }
+            } catch (error) {
+                showResult('💥 Erreur de requête:\\n' + error.message, 'error');
+            }
+        }
+        
+        // Envoi en lot
+        async function sendBulkEmails() {
+            showResult('📧📧 Envoi en lot...', 'loading');
+            
+            const bulkData = [
+                {
+                    type: 'email',
+                    recipient: document.getElementById('recipient').value,
+                    subject: 'Newsletter Test 1 - Nodemailer',
+                    template: 'event-reminder',
+                    templateData: {
+                        userName: 'Utilisateur 1',
+                        eventName: 'Formation Nodemailer',
+                        timeUntilEvent: '2 heures',
+                        eventDate: '19 juin 2025',
+                        eventLocation: 'Centre de formation'
+                    }
+                },
+                {
+                    type: 'email',
+                    recipient: document.getElementById('recipient').value,
+                    subject: 'Newsletter Test 2 - Nodemailer',
+                    template: 'reservation-confirmation',
+                    templateData: {
+                        userName: 'Utilisateur 2',
+                        eventName: 'Atelier Email',
+                        reservationNumber: 'BULK-001',
+                        eventDate: '20 juin 2025',
+                        eventLocation: 'Laboratoire digital',
+                        ticketCount: 1,
+                        totalAmount: 25
+                    }
+                }
+            ];
+            
+            try {
+                const promises = bulkData.map(data => 
+                    fetch(`${API_BASE}/notifications/send`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(data)
+                    }).then(res => res.json())
+                );
+                
+                const results = await Promise.all(promises);
+                
+                let successCount = 0;
+                let errorCount = 0;
+                
+                results.forEach((result, index) => {
+                    if (result.success) {
+                        successCount++;
+                    } else {
+                        errorCount++;
+                    }
+                });
+                
+                const summary = `📊 Résultats envoi en lot:\\n✅ Succès: ${successCount}\\n❌ Erreurs: ${errorCount}\\n\\nDétails:\\n${JSON.stringify(results, null, 2)}`;
+                
+                if (errorCount === 0) {
+                    showResult(summary, 'success');
+                } else {
+                    showResult(summary, 'error');
+                }            } catch (error) {
+                showResult('💥 Erreur lors de l\'envoi en lot:\\n' + error.message, 'error');
+            }
+        }
+        
+        // Afficher les résultats
+        function showResult(message, type) {
+            const resultDiv = document.getElementById('result');
+            resultDiv.textContent = message;
+            resultDiv.className = `result ${type}`;
+        }
+        
+        // Mettre à jour les données du template selon le template sélectionné
+        document.getElementById('template').addEventListener('change', function() {
+            const template = this.value;
+            const templateDataTextarea = document.getElementById('templateData');
+            
+            if (template === 'event-reminder') {
+                templateDataTextarea.value = JSON.stringify({
+                    userName: "Marie Martin",
+                    eventName: "Conférence Tech 2025",
+                    timeUntilEvent: "2 heures",
+                    eventDate: "19 juin 2025 à 14h00",
+                    eventLocation: "Centre de Congrès, Lyon"
+                }, null, 2);
+            } else if (template === 'reservation-confirmation') {
+                templateDataTextarea.value = JSON.stringify({
+                    userName: "Jean Dupont",
+                    eventName: "Concert Test Nodemailer",
+                    reservationNumber: "RES-2025-TEST",
+                    eventDate: "19 juin 2025",
+                    eventLocation: "Stade Test, Paris",
+                    ticketCount: 2,
+                    totalAmount: 50
+                }, null, 2);
+            }
+        });
+        
+        // Gestionnaire de soumission du formulaire
+        document.getElementById('emailForm').addEventListener('submit', sendEmail);
+        
+        // Message d'information au chargement
+        window.addEventListener('load', function() {
+            showResult('🚀 Interface prête ! Assurez-vous que le serveur est démarré sur le port 3004.\\n\\n💡 Commandes utiles:\\n- npm start (démarrer le serveur)\\n- npm run test-email (test en ligne de commande)', 'loading');
+        });
+    </script>
+</body>
+</html>

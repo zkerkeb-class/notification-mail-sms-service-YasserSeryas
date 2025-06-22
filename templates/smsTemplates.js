@@ -16,5 +16,5 @@ const smsTemplates = {
     }
   };
   
-  module.exports = smsTemplates;
+  export default smsTemplates;
   

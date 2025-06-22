@@ -1,13 +1,22 @@
 import nodemailer from '../config/email.js';
-import { compile } from 'handlebars';
+import pkg from 'handlebars';
 import emailTemplates from '../templates/emailTemplates.js';
 
-class EmailService {
-  async sendEmail(notification) {
+const { compile } = pkg;
+
+class EmailService {  async sendEmail(notification) {
     try {
+      if (!nodemailer) {
+        throw new Error('Service email non configuré - vérifiez vos variables d\'environnement SMTP');
+      }
+
+      // Debug: Afficher les templates disponibles
+      console.log('🔍 Templates disponibles:', Object.keys(emailTemplates));
+      console.log('🎯 Template demandé:', notification.template);
+
       const template = emailTemplates[notification.template];
       if (!template) {
-        throw new Error(`Template ${notification.template} not found`);
+        throw new Error(`Template '${notification.template}' not found. Templates disponibles: ${Object.keys(emailTemplates).join(', ')}`);
       }
 
       const compiledTemplate = compile(template.html);
@@ -49,6 +58,23 @@ class EmailService {
     }
     
     return results;
+  }
+  async verifyConnection() {
+    try {
+      if (!nodemailer) {
+        return { 
+          success: false, 
+          error: 'Transporter email non initialisé - vérifiez vos variables d\'environnement SMTP' 
+        };
+      }
+      
+      await nodemailer.verify();
+      console.log('SMTP connection verified successfully');
+      return { success: true, message: 'SMTP connection verified' };
+    } catch (error) {
+      console.error('SMTP connection failed:', error);
+      return { success: false, error: error.message };
+    }
   }
 }
 

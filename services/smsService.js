@@ -1,6 +1,8 @@
-import twilioClient from '../config/sms';
-import { compile } from 'handlebars';
-import smsTemplates from '../templates/smsTemplates';
+import twilioClient from '../config/sms.js';
+import pkg from 'handlebars';
+import smsTemplates from '../templates/smsTemplates.js';
+
+const { compile } = pkg;
 
 class SMSService {
   async sendSMS(notification) {
@@ -48,6 +50,33 @@ class SMSService {
     }
     
     return results;
+  }
+
+  async verifyConnection() {
+    try {
+      if (!twilioClient) {
+        return {
+          success: false,
+          error: 'Client Twilio non initialisé - vérifiez vos variables d\'environnement'
+        };
+      }
+
+      // Test simple : récupérer les informations du compte
+      const account = await twilioClient.api.accounts.get();
+      
+      return {
+        success: true,
+        message: 'Connexion Twilio vérifiée avec succès',
+        accountSid: account.sid,
+        status: account.status
+      };
+    } catch (error) {
+      console.error('Twilio connection failed:', error);
+      return {
+        success: false,
+        error: error.message
+      };
+    }
   }
 }
 

@@ -21,6 +21,9 @@ app.use((req, res, next) => {
 app.use('/api/notifications', notificationRoutes);
 
 // Health check
+app.get('/health', (req, res) => {
+  res.status(200).json({ status: 'OK', timestamp: new Date().toISOString() });
+});
 
 
 // Gestion des erreurs
